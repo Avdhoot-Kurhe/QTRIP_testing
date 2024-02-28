@@ -3,6 +3,9 @@ package qtriptest.tests;
 import qtriptest.DP;
 import qtriptest.DriverSingleton;
 import qtriptest.ReportSingleton;
+import qtriptest.pages.AdventureDetailsPage;
+import qtriptest.pages.AdventurePage;
+import qtriptest.pages.HistoryPage;
 import qtriptest.pages.HomePage;
 import qtriptest.pages.LoginPage;
 import qtriptest.pages.RegisterPage;
@@ -17,7 +20,7 @@ import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
 import org.testng.asserts.Assertion;
 
-public class testCase_01 {
+public class testCase_04 {
 
     static RemoteWebDriver driver;
 	private static ExtentReports report;
@@ -36,47 +39,57 @@ public class testCase_01 {
 		driver = DriverSingleton.createDriver();
 		logStatus("driver", "Initializing driver", "Success");
 		report = ReportSingleton.getInstance().getExtent();
-        test = report.startTest("TestCase 01");
+        test = report.startTest("TestCase 04");
 	}
 
 
-	@Test(description = "verifying home, register and login", priority = 1, groups = "Login Flow", dataProvider = "data-provider", dataProviderClass = DP.class, enabled = true)
-	public static void TestCase01(String email, String password) throws IOException {
+	@Test(description = "Verifying all bookings", priority = 4, groups = "Reliability Flow", dataProvider = "data-provider", dataProviderClass = DP.class, enabled = true)
+	public static void TestCase04(String username, String password, String dataset1, String dataset2, String dataset3) throws IOException {
 		Assertion assertion = new Assertion();
 		ReportSingleton.getInstance();
-		
-		logStatus("TestCase 01", "verifying home, register and login", "started");
+
+		logStatus("TestCase 04", "Verifying all bookings", "started");
 		try {
 
-			Boolean status;
+            String[] datasets = {dataset1, dataset2, dataset3};
 
 			HomePage home = new HomePage(driver);
 			RegisterPage register = new RegisterPage(driver);
 			LoginPage login = new LoginPage(driver);
+			AdventurePage adventure = new AdventurePage(driver);
+			AdventureDetailsPage adventureDetails = new AdventureDetailsPage(driver);
+			HistoryPage history = new HistoryPage(driver);
 
 			home.navigateToHomePage();
 			home.clickOnRegister();
-			assertion.assertTrue(home.verifyRegisterPage(), "verifying register page failed");
-			test.log(LogStatus.PASS, "successful verifying register page");
+			register.registerUser(username, password, true);
+			String lastGeneratedUsername = register.lastGeneratedUsername;
+			login.performLogin(lastGeneratedUsername, password);
 			
-			status = register.registerUser(email, password, true);
-			assertion.assertTrue(status, "Registraion failed");
-			test.log(LogStatus.PASS, "successful registration");
+			for (String dataset : datasets) {
+                String[] data = dataset.split(";");
+                home.searchForCity(data[0]);
+                home.clickOnTheCity(data[0]);
+				Thread.sleep(2000);
+                adventure.searchForAdventure(data[1]);
+                adventureDetails.reserveAdventure(data[2], data[3], data[4]);
+                assertion.assertTrue(adventureDetails.checkAdventureSuccessfull(), "Adventure unsuccessfull");
+                test.log(LogStatus.PASS, "Adventure successfull");
+				home.navigateToHomePage();
+            }
 
-			String username = register.lastGeneratedUsername;
-			status = login.performLogin(username, password);
-			assertion.assertTrue(status, "Login failed");
-			test.log(LogStatus.PASS, "successful login");
+            history.navigateToHistory();
+            int totalBook = history.getTotalBookings();
+            assertion.assertTrue(totalBook==3, "Bookings display failed");
+			test.log(LogStatus.PASS, "Bookings display successfull");
+			login.performLogout();
+			
+			logStatus("TestCase 04", "Verifying all bookings", "success");
 
-			status = login.performLogout();
-			assertion.assertTrue(status, "Logout failed");
-			test.log(LogStatus.PASS, "successful logout");
-
-			logStatus("TestCase 01", "verifying home, register and login", "success");
 		} catch (Exception e) {
-			logStatus("TestCase 01", "verifying home, register and login", "failed");
+			logStatus("TestCase 04", "Verifying all bookings", "failed");
 			e.printStackTrace();
-			test.log(LogStatus.FAIL, test.addScreenCapture(ReportSingleton.capture(driver))+"TestCase01 failed, reason: "+e.getMessage());
+			test.log(LogStatus.FAIL, test.addScreenCapture(ReportSingleton.capture(driver))+"TestCase03 failed, reason: "+e.getMessage());
 		}
 	}
 

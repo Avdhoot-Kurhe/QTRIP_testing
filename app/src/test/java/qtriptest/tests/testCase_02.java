@@ -4,8 +4,6 @@ import qtriptest.DP;
 import qtriptest.DriverSingleton;
 import qtriptest.ReportSingleton;
 import qtriptest.pages.HomePage;
-import qtriptest.pages.LoginPage;
-import qtriptest.pages.RegisterPage;
 import java.io.IOException;
 import java.net.MalformedURLException;
 import com.relevantcodes.extentreports.ExtentReports;
@@ -17,7 +15,7 @@ import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
 import org.testng.asserts.Assertion;
 
-public class testCase_01 {
+public class testCase_02 {
 
     static RemoteWebDriver driver;
 	private static ExtentReports report;
@@ -36,47 +34,45 @@ public class testCase_01 {
 		driver = DriverSingleton.createDriver();
 		logStatus("driver", "Initializing driver", "Success");
 		report = ReportSingleton.getInstance().getExtent();
-        test = report.startTest("TestCase 01");
+        test = report.startTest("TestCase 02");
 	}
 
 
-	@Test(description = "verifying home, register and login", priority = 1, groups = "Login Flow", dataProvider = "data-provider", dataProviderClass = DP.class, enabled = true)
-	public static void TestCase01(String email, String password) throws IOException {
+	@Test(description = "verifying search and filters", priority = 2, groups = "Search and Filter flow", dataProvider = "data-provider", dataProviderClass = DP.class, enabled = true)
+	public static void TestCase02(String city, String categoryFilter, String durationFilter, String expectedFilterResults, String expectedUnfilterResults) throws IOException {
 		Assertion assertion = new Assertion();
 		ReportSingleton.getInstance();
-		
-		logStatus("TestCase 01", "verifying home, register and login", "started");
+
+		logStatus("TestCase 02", "verifying search and filters", "started");
 		try {
 
-			Boolean status;
-
 			HomePage home = new HomePage(driver);
-			RegisterPage register = new RegisterPage(driver);
-			LoginPage login = new LoginPage(driver);
 
-			home.navigateToHomePage();
-			home.clickOnRegister();
-			assertion.assertTrue(home.verifyRegisterPage(), "verifying register page failed");
-			test.log(LogStatus.PASS, "successful verifying register page");
+            home.navigateToHomePage();
+			// home.searchForCity("Ranchi");
+			// assertion.assertTrue(home.verifyNoCity(), "verify no city failed");
+			home.searchForCity(city);
+			assertion.assertTrue(home.verifyCityDisplayed(city), "verify city display failed");
+			test.log(LogStatus.PASS, "successful verify city display");
 			
-			status = register.registerUser(email, password, true);
-			assertion.assertTrue(status, "Registraion failed");
-			test.log(LogStatus.PASS, "successful registration");
+			home.clickOnTheCity(city);
+			home.filterHoursSelect(durationFilter);
+			// assertion.assertTrue(home.verifyRecords()==10, "verify records failed");
+			home.filterCategorySelect(categoryFilter);
+			assertion.assertTrue(home.verifyRecords()==Integer.parseInt(expectedFilterResults), "verify records failed");
+			test.log(LogStatus.PASS, "successful verify records");
 
-			String username = register.lastGeneratedUsername;
-			status = login.performLogin(username, password);
-			assertion.assertTrue(status, "Login failed");
-			test.log(LogStatus.PASS, "successful login");
+			home.clearFiltersHours();
+			home.clearFiltersCategories();
+			assertion.assertTrue(home.verifyRecords()==Integer.parseInt(expectedUnfilterResults), "verify records failed");
+			test.log(LogStatus.PASS, "successful verify records");
 
-			status = login.performLogout();
-			assertion.assertTrue(status, "Logout failed");
-			test.log(LogStatus.PASS, "successful logout");
+			logStatus("TestCase 02", "verifying search and filters", "success");
 
-			logStatus("TestCase 01", "verifying home, register and login", "success");
 		} catch (Exception e) {
-			logStatus("TestCase 01", "verifying home, register and login", "failed");
+			logStatus("TestCase 02", "verifying search and filters", "failed");
 			e.printStackTrace();
-			test.log(LogStatus.FAIL, test.addScreenCapture(ReportSingleton.capture(driver))+"TestCase01 failed, reason: "+e.getMessage());
+			test.log(LogStatus.FAIL, test.addScreenCapture(ReportSingleton.capture(driver))+"TestCase02 failed, reason: "+e.getMessage());
 		}
 	}
 
@@ -88,7 +84,7 @@ public class testCase_01 {
 		driver.quit();
 		logStatus("driver", "Quitting driver", "Success");
 
-		// End the test
+		//End the test
         report.endTest(test);
 
         // Write the test to filesystem
